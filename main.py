@@ -1,20 +1,23 @@
-import pygame
+import pygame as pg
 import units
 import consts
 import util
 import gui
 
 # Initialize pygame module
-# pygame.init()
-pygame.font.init()
+# pg.init()
+pg.font.init()
 
 # Create pygame screen
-screen = pygame.display.set_mode((consts.SCREEN_WIDTH, consts.SCREEN_HEIGHT))
-pygame.display.set_caption('Tower Defense')
+screen = pg.display.set_mode((consts.SCREEN_WIDTH, consts.SCREEN_HEIGHT))
+pg.display.set_caption('Tower Defense')
+
+# Set background
+background = pg.Surface((800,800))
+background.fill(consts.BLACK)
 
 # Game clock
-clock = pygame.time.Clock()
-
+clock = pg.time.Clock()
 
 def game_loop():
     '''
@@ -22,6 +25,7 @@ def game_loop():
     '''
     running = True
     wave_number = 1
+    game_speed = 1
 
     # Initialize tower
     tower = units.Tower(screen)
@@ -39,22 +43,30 @@ def game_loop():
 
         # Update GUI
         interface.update()
-
+        
         # Check for inputs
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+            # elif event.type == pg.KEYDOWN:
+            #     if event.key == pg.K_1:
+            #         tower.upgrade_damage()
+            #     elif event.key == pg.K_2:
+            #         tower.upgrade_attack_speed()
+            elif interface.test_button.is_clicked(event):
+                if tower.cash >= 10:
                     tower.upgrade_damage()
-                elif event.key == pygame.K_2:
+                    print("Damage upgraded!")
+            elif interface.test_button2.is_clicked(event):
+                if tower.cash >= 10:
                     tower.upgrade_attack_speed()
+                    print("Attack speed upgraded!")
 
         # Spawn new wave if all enemies dead
         if not enemies:
-            for _ in range(consts.WAVE_PAUSE_TIME*consts.FPS):
-                tower.update(screen, enemies)
-                clock.tick(consts.FPS)
+            # for _ in range(consts.WAVE_PAUSE_TIME*consts.FPS):
+            #     tower.update(screen, enemies)
+            #     clock.tick(game_speed*consts.FPS)
             wave_enemies = initial_enemies + int(1.01*wave_number)
             enemies = util.spawn_enemies(wave_enemies, tower)
             wave_number += 1
@@ -70,15 +82,17 @@ def game_loop():
                 enemy.attack(tower)
             else:
                 enemies.remove(enemy)
+                enemy.kill()
                 tower.give_cash()
 
         # Check if tower is dead
         if tower.health <= 0:
             running = False
 
-        pygame.display.flip()
-        clock.tick(consts.FPS)
+        pg.display.flip()
+        clock.tick(int(game_speed*consts.FPS))
 
 
 if __name__ == "__main__":
     game_loop()
+                                                                               

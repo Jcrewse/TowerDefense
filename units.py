@@ -160,7 +160,7 @@ class Tower:
 
 class Enemy:
     '''
-    Class defining enemy
+    Class defining enemies
     '''
 
     def __init__(self, x, y, health=10, damage=5, speed=1):
@@ -177,33 +177,15 @@ class Enemy:
         rect = (self.x - 10, self.y - 10, 20, 20)
         pygame.draw.rect(surface, (255, 0, 0), rect)
 
-    def calculate_direction(self):
-        '''
-        Calculated direction from tower to enemy
-        '''
-        dx = consts.TOWER_X - self.x
-        dy = consts.TOWER_Y - self.y
-        dist = (dx**2 + dy**2)**0.5
-        return dx/dist, dy/dist, dist
-
-    def touching_tower(self):
-        '''
-        Returns True if within the distance of the tower size
-        '''
-        dx = consts.TOWER_X - self.x
-        dy = consts.TOWER_Y - self.y
-        dist = (dx**2 + dy**2)**0.5
-        return dist <= consts.TOWER_SIZE
-
     def move(self):
         '''
         Moves enemy towards tower according to speed
         '''
         # Calculate direction to move
-        direction = self.calculate_direction()
+        direction = self.__calculate_direction()
 
         # Check if against the tower
-        if self.touching_tower():
+        if self.__touching_tower():
             return
         else:
             self.x += direction[0]*self.speed
@@ -213,5 +195,36 @@ class Enemy:
         '''
         Attacks tower if touching it. Reducing tower health.
         '''
-        if self.touching_tower():
+        if self.__touching_tower():
             tower.take_damage(self.damage)
+            
+    def kill(self):
+        '''
+        Removes enemy from the game
+        '''
+
+        del self
+        
+    def __animate_death(self):
+        '''
+        Plays death animation
+        '''
+        pass
+            
+    def __calculate_direction(self):
+        '''
+        Calculated direction from tower to enemy
+        '''
+        dx = consts.TOWER_X - self.x
+        dy = consts.TOWER_Y - self.y
+        dist = (dx**2 + dy**2)**0.5
+        return dx/dist, dy/dist, dist
+
+    def __touching_tower(self):
+        '''
+        Returns True if within the distance of the tower size
+        '''
+        dx = consts.TOWER_X - self.x
+        dy = consts.TOWER_Y - self.y
+        dist = (dx**2 + dy**2)**0.5
+        return dist <= consts.TOWER_SIZE
