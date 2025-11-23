@@ -1,217 +1,208 @@
 '''Units for TowerDefense'''
 import pygame
 import consts
-
-
-class Projectile:
-    '''Class defining projectiles shot by the tower'''
-
-    def __init__(self, pos, target, speed, damage):
-        self.x = pos[0]
-        self.y = pos[1]
-        self.target = target
-        self.speed = speed
-        self.damage = damage
-        self.direction = self.calculate_direction()
-
-    def calculate_direction(self):
-        '''Calculates direction from projectile to target'''
-        dx = self.target.x - self.x
-        dy = self.target.y - self.y
-        distance = (dx**2 + dy**2)**0.5
-        return dx/distance, dy/distance
-
-    def move(self):
-        '''Changes projectile position according to direction and speed'''
-        self.x += self.direction[0]*self.speed
-        self.y += self.direction[1]*self.speed
-
-    def draw(self, surface):
-        '''Draws projectile as a small circle'''
-        pygame.draw.circle(surface, consts.WHITE,
-                           (int(self.x), int(self.y)), 5)
-
-    def has_hit_target(self):
-        '''Returns True if distance between projectile position and target position
-        is less than 5 (arbitrary selection, could refine)'''
-        return ((self.target.x - self.x)**2 + (self.target.y - self.y)**2)**0.5 < 5
+import math
 
 class Tower:
     '''Class defining the tower'''
 
     def __init__(self, screen, health=100, regen=0.5, damage=15, range=150, cooldown=25, cash=0):
+        
         self.screen = screen                              # Game screen
+        
+        # Geometry
         self.pos = (consts.TOWER_X, consts.TOWER_Y)       # Tower position
+        
+        # Health
         self.health = health                              # Current health
         self.max_health = health                          # Maximum health
+        self.regen = regen/consts.FPS                     # Current health regen
+        
+        # Attack stats
         self.damage = damage                              # Shot damage
         self.range = range                                # Shot range
         self.cooldown_count = cooldown                    # Shot current cooldown
         self.cooldown = cooldown                          # Shot cooldown max
+        
+        # Resources/scores
         self.cash = cash                                  # Current cash
-        self.regen = regen/consts.FPS                     # Current health regen
+        self.wave_number = 1                              # Current wave number
+        
+        # Lists
         self.projectiles = []                             # Projectile list
+        self.targets = []                                 # Current targets list
+        
+        self.current_target = None
+        
+        # Tower surface for drawing
+        self.surface = pygame.Surface((consts.TOWER_SIZE, consts.TOWER_SIZE), pygame.SRCALPHA)
+        
+        #self.attack_sound = pygame.mixer.Sound('assets/sounds/shot_sound.wav')
+        
 
-    def update(self, screen, enemies):
+    def update(self, enemies_group, projectiles_group):
         '''
         Updates tower for each frame
         '''
-        self.draw(screen)
-        self.attack(enemies)
-        self.update_projectiles()
-        self.regenerate_health()
-        self.cooldown_tick()
-
-    def draw(self, surface):
-        '''
-        Draws tower
-        '''
-        # Draw tower
-        pygame.draw.circle(surface,
-                           consts.GREEN,
-                           self.pos,
-                           consts.TOWER_SIZE)
-
-        # Draw range circle
-        pygame.draw.circle(surface,
-                           consts.GREEN,
-                           self.pos,
-                           self.range,
-                           width=1)
-
-    def attack(self, enemies):
-        '''
-        Targets enemies and shoots projectiles. 
-        If cooldown is zero, cycle through current enemies list 
-            If an enemy in range
-                i.  Add projectile to projectiles list
-                ii. Reset cooldown
-        '''
-        if self.cooldown_count == 0:
-            for enemy in enemies:
-                if self.in_range(enemy):
-                    shot = Projectile(
-                        self.pos, enemy, speed=10, damage=self.damage)
-                    self.projectiles.append(shot)
-                    self.cooldown_count = self.cooldown
-                    break
-
-    def update_projectiles(self):
-        '''
-        Updates all active projectiles
-        '''
-        for projectile in self.projectiles[:]:
-            projectile.move()
-            if projectile.has_hit_target():
-                projectile.target.health -= projectile.damage
-                self.projectiles.remove(projectile)
-            else:
-                projectile.draw(self.screen)
-
-    def in_range(self, target):
-        '''
-        Returns True if target is within range of tower
-        '''
-        return ((target.x - self.pos[0])**2+(target.y - self.pos[1])**2)**0.5 <= self.range
-
-    def cooldown_tick(self):
-        '''
-        If cooldown > 0, reduces current cooldown count by 1.
-        '''
         if self.cooldown_count > 0:
             self.cooldown_count -= 1
+            
+        self._update_targets(enemies_group)
+        
+        if self.cooldown_count == 0 and self.current_target is not None:
+            shot = Projectile(
+                self.pos, self.current_target, speed=5, damage=self.damage)
+            projectiles_group.add(shot)
+            self.cooldown_count = self.cooldown
+            #self.attack_sound.play()
+        
+    def _update_targets(self, enemies_group):
+        '''
+        Updates current targets list based on enemies in range
+        '''
+        if not self._valid_target(self.current_target):
+            self.current_target = None
 
-    def regenerate_health(self):
-        '''
-        Increases health by regen amount
-        '''
-        if self.health < self.max_health:
-            self.health += self.regen
-
-    def take_damage(self, damage):
-        '''
-        Reduces tower health by damage amount.
-        '''
-        self.health -= damage/consts.FPS
-
-    def give_cash(self):
-        '''
-        Increases tower cash by 1.
-        '''
-        self.cash += 1
-
-    def upgrade_attack_speed(self):
-        '''
-        Upgrades tower attack speed (reduced cooldown)
-        '''
-        cost = 10
-        if self.cash >= cost and self.cooldown > 1:
-            self.cash -= cost
-            self.cooldown -= 1
-
+        # Acquire target if we don't have one
+        if self.current_target is None:
+            cx, cy = self.pos
+            range_sq = self.range * self.range
+            # Simple “closest to tower” selection
+            best_enemy = None
+            best_dist_sq = None
+            for enemy in enemies_group:
+                if getattr(enemy, "state", "alive") != "alive" or enemy.health <= 0:
+                    continue
+                ex, ey = enemy.rect.center
+                dx = ex - cx
+                dy = ey - cy
+                dist_sq = dx*dx + dy*dy
+                if dist_sq <= range_sq and (best_dist_sq is None or dist_sq < best_dist_sq):
+                    best_dist_sq = dist_sq
+                    best_enemy = enemy
+            self.current_target = best_enemy
+        
+    def _valid_target(self, enemy):
+        if enemy is None:
+            return False
+        if not enemy.alive():
+            return False
+        if getattr(enemy, "state", "alive") != "alive" or enemy.health <= 0:
+            return False
+        cx, cy = self.pos
+        ex, ey = enemy.rect.center
+        dx = ex - cx
+        dy = ey - cy
+        return dx*dx + dy*dy <= self.range * self.range
+    
     def upgrade_damage(self):
-        '''
-        Upgrades tower attack damage
-        '''
-        cost = 10
-        if self.cash >= cost:
-            self.cash -= cost
-            self.damage += 1
+        '''Upgrade tower damage'''
+        print('Upgrading damage')
+        upgrade_cost = 50 + self.damage * 2
+        if self.cash >= upgrade_cost:
+            self.cash -= upgrade_cost
+            self.damage += 5
+            
+    def upgrade_speed(self):
+        '''Upgrade tower speed (reduce cooldown)'''
+        print('Upgrading speed')
+        upgrade_cost = 50 + (self.cooldown * 3)
+        if self.cash >= upgrade_cost and self.cooldown > 5:
+            self.cash -= upgrade_cost
+            self.cooldown -= 2
+            
+    def upgrade_armor(self):
+        '''Upgrade tower armor (increase max health)'''
+        print('Upgrading armor')
+        upgrade_cost = 50 + (self.max_health * 2)
+        if self.cash >= upgrade_cost:
+            self.cash -= upgrade_cost
+            self.max_health += 20
+            self.health += 20  # also heal current health
 
-class Enemy:
+    def draw(self, screen):
+        pygame.draw.circle(screen, (0, 255, 0), self.pos, 20)
+        # optional: draw range
+        pygame.draw.circle(screen, (0, 100, 0), self.pos, self.range, 1)
+    
+###############################################################################
+    
+class Enemy(pygame.sprite.Sprite):
     '''
-    Class defining enemies
+    Class defining enemies using pygame sprite system
     '''
 
     def __init__(self, x, y, health=10, damage=5, speed=1):
+        super().__init__()
+        self.state = 'alive'
         self.health = health
+        self.death_timer = 0
+        self.death_duration = 30
         self.damage = damage
         self.x = x
         self.y = y
         self.speed = speed
-
-    def draw(self, surface):
+        
+        self.base_image = pygame.Surface((20, 20), pygame.SRCALPHA)
+        # pygame.draw.polygon(
+        #     self.base_image,
+        #     (255, 255, 255),
+        #     [(16, 10), (10, 5), (10, 15)]  # little arrow tip on the right side
+        # )
+        pygame.draw.rect(self.base_image, (255, 0, 0), (0, 0, 20, 20))
+        self.image = self.base_image.copy()
+        self.rect = self.image.get_rect(center=(self.x, self.y))
+        
+        
+    def update(self):
         '''
-        Draws enemy
+        Updates enemy each frame
         '''
-        rect = (self.x - 10, self.y - 10, 20, 20)
-        pygame.draw.rect(surface, (255, 0, 0), rect)
-
-    def move(self):
-        '''
-        Moves enemy towards tower according to speed
-        '''
+        if self.state == 'alive':
+            self._move()
+        elif self.state == 'dying':
+            self._animate_death()
+            
+        if self.health <= 0 and self.state == 'alive':
+            self.state = 'dying'
+            self.death_timer = 0
+        
+        if self.state == 'dead':
+            self.kill()
+                   
+    def _move(self):
+        '''Moves enemy towards tower'''
+        if self.state != 'alive':
+            return
+        
         # Calculate direction to move
-        direction = self.__calculate_direction()
+        direction = self._calculate_direction()
+
+        self.image = pygame.transform.rotate(self.base_image, math.degrees(math.atan2(-direction[1], direction[0])))
 
         # Check if against the tower
-        if self.__touching_tower():
+        if self._touching_tower():
             return
         else:
             self.x += direction[0]*self.speed
             self.y += direction[1]*self.speed
-
-    def attack(self, tower):
-        '''
-        Attacks tower if touching it. Reducing tower health.
-        '''
-        if self.__touching_tower():
-            tower.take_damage(self.damage)
-            
-    def kill(self):
-        '''
-        Removes enemy from the game
-        '''
-
-        del self
+            self.rect.center = (self.x, self.y)
         
-    def __animate_death(self):
-        '''
-        Plays death animation
-        '''
-        pass
-            
-    def __calculate_direction(self):
+    def _animate_death(self):
+        '''Animates enemy death'''
+        # advance timer
+        self.death_timer += 1
+
+        # simple fade-out
+        alpha = max(0, 255 * (1 - self.death_timer / self.death_duration))
+        surf = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
+        surf.fill((255, 0, 0, int(alpha)))
+        self.image = surf
+
+        if self.death_timer >= self.death_duration:
+            self.state = "dead"
+    
+    def _calculate_direction(self):
         '''
         Calculated direction from tower to enemy
         '''
@@ -220,7 +211,7 @@ class Enemy:
         dist = (dx**2 + dy**2)**0.5
         return dx/dist, dy/dist, dist
 
-    def __touching_tower(self):
+    def _touching_tower(self):
         '''
         Returns True if within the distance of the tower size
         '''
@@ -228,3 +219,68 @@ class Enemy:
         dy = consts.TOWER_Y - self.y
         dist = (dx**2 + dy**2)**0.5
         return dist <= consts.TOWER_SIZE
+  
+###############################################################################
+    
+class Projectile(pygame.sprite.Sprite):
+    '''Class defining projectiles shot by the tower'''
+
+    def __init__(self, pos, target, speed=5, damage=10):
+        super().__init__()
+        self.image = pygame.Surface((6, 6))
+        pygame.draw.circle(self.image, (255, 255, 0), (3, 3), 3)
+        self.rect = self.image.get_rect(center=pos)
+        self.target = target
+        self.speed = speed
+        self.damage = damage
+    
+        # New: store velocity and whether we're still homing
+        self.vx = 0.0
+        self.vy = 0.0
+        self.tracking = True
+
+    def update(self):
+        '''Moves projectile towards target (while alive), then flies straight'''
+        # If we're still tracking, try to home in on the target
+        if self.tracking:
+            if not self._alive_target():
+                # Target is gone: stop tracking but keep current velocity
+                self.tracking = False
+            else:
+                tx, ty = self.target.rect.center
+                x, y = self.rect.center
+                dx = tx - x
+                dy = ty - y
+                dist_sq = dx*dx + dy*dy
+
+                # Hit detection
+                if dist_sq <= 25:  # hit radius (~5 px)
+                    self.target.health -= self.damage
+                    self.kill()
+                    return
+
+                dist = math.sqrt(dist_sq)
+                if dist == 0:
+                    self.kill()
+                    return
+
+                # Update velocity to home in on target
+                self.vx = self.speed * dx / dist
+                self.vy = self.speed * dy / dist
+
+        # Move using current velocity
+        self.rect.x += self.vx
+        self.rect.y += self.vy
+
+        # Kill projectile once it goes off-screen (with a small margin)
+        x, y = self.rect.center
+        if (x < -50 or x > consts.SCREEN_WIDTH + 50 or
+            y < -50 or y > consts.SCREEN_HEIGHT + 50):
+            self.kill()
+
+    def _alive_target(self):
+        '''Target still exists in the game'''
+        return (
+            self.target is not None and
+            self.target.alive()
+        )

@@ -16,82 +16,59 @@ pg.display.set_caption('Tower Defense')
 background = pg.Surface((800,800))
 background.fill(consts.BLACK)
 
-# Game clock
-clock = pg.time.Clock()
-
 def game_loop():
-    '''
-    Main game loop function
-    '''
     running = True
-    wave_number = 1
-    game_speed = 1
-
-    # Initialize tower
-    tower = units.Tower(screen)
-
-    # Initialize first wave
-    initial_enemies = 10
-    enemies = util.spawn_enemies(initial_enemies, tower)
-
-    # Initialize GUI
-    interface = gui.Interface(screen, tower, wave_number)
-
-    # Run the game
+    clock = pg.time.Clock()
+    
+    #Groups
+    enemies = pg.sprite.Group()
+    projectiles = pg.sprite.Group()
+    all_sprites = pg.sprite.Group()
+    
+    # Create Tower
+    tower = units.Tower(screen, consts.TOWER_X, consts.TOWER_Y, range=400)
+    
+    # Create interface
+    interface = gui.Interface(tower)
+    ui = pg.sprite.Group(interface)
+    
+    # Wave set up
+    util.spawn_wave(enemies, all_sprites, tower, count=20)
+    WAVE_INTERVAL_MS = int(consts.WAVE_INTERVAL * 1000)  # milliseconds
+    last_wave_time = pg.time.get_ticks()
+    
     while running:
-        screen.fill(consts.BLACK)
-
-        # Update GUI
-        interface.update()
-        
-        # Check for inputs
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                pg.quit()
-            # elif event.type == pg.KEYDOWN:
-            #     if event.key == pg.K_1:
-            #         tower.upgrade_damage()
-            #     elif event.key == pg.K_2:
-            #         tower.upgrade_attack_speed()
-            elif interface.test_button.is_clicked(event):
-                if tower.cash >= 10:
-                    tower.upgrade_damage()
-                    print("Damage upgraded!")
-            elif interface.test_button2.is_clicked(event):
-                if tower.cash >= 10:
-                    tower.upgrade_attack_speed()
-                    print("Attack speed upgraded!")
+                running = False
+    
+            interface.dmg_button.handle_event(event)
+            interface.spd_button.handle_event(event)
+            interface.arm_button.handle_event(event)
 
-        # Spawn new wave if all enemies dead
-        if not enemies:
-            # for _ in range(consts.WAVE_PAUSE_TIME*consts.FPS):
-            #     tower.update(screen, enemies)
-            #     clock.tick(game_speed*consts.FPS)
-            wave_enemies = initial_enemies + int(1.01*wave_number)
-            enemies = util.spawn_enemies(wave_enemies, tower)
-            wave_number += 1
+        now = pg.time.get_ticks()
+        if now - last_wave_time >= WAVE_INTERVAL_MS and len(enemies) == 0:
+            tower.wave_number += 1
+            util.spawn_wave(enemies, all_sprites, tower, count=20 + tower.wave_number * 5)
+            last_wave_time = now
+
+        # Update enemies and projectiles
+        enemies.update()
+        projectiles.update()
+        ui.update()
 
         # Update tower
-        tower.update(screen, enemies)
+        tower.update(enemies, projectiles)
 
-        # Draw enemies, move, attack
-        for enemy in enemies.copy():
-            if enemy.health > 0:
-                enemy.draw(screen)
-                enemy.move()
-                enemy.attack(tower)
-            else:
-                enemies.remove(enemy)
-                enemy.kill()
-                tower.give_cash()
-
-        # Check if tower is dead
-        if tower.health <= 0:
-            running = False
+        # Rendering
+        screen.fill((0, 0, 0))
+        enemies.draw(screen)
+        projectiles.draw(screen)
+        tower.draw(screen)
+        ui.draw(screen)
 
         pg.display.flip()
-        clock.tick(int(game_speed*consts.FPS))
-
+        clock.tick(consts.FPS)
 
 if __name__ == "__main__":
     game_loop()
