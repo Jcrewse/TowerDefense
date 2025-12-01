@@ -9,7 +9,7 @@ class GameManager:
         self.screen = screen
 
         # Game state
-        self.running = True
+        self.running = False
         self.paused = False
         self.game_over = False
         
@@ -33,6 +33,15 @@ class GameManager:
         self.wave_interval_ms = int(consts.WAVE_INTERVAL*1000)
         self.wave_pause_ms = int(consts.WAVE_PAUSE_TIME*1000)
         self.waiting_for_next_wave = False
+        
+    
+    def start_game(self):
+        """Start the game loop"""
+        self.running = True
+        self.paused = False
+        self.game_over = False
+        
+        self._spawn_next_wave()
 
 
     def update(self):

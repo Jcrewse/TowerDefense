@@ -11,6 +11,7 @@ screen = pg.display.set_mode((consts.SCREEN_WIDTH, consts.SCREEN_HEIGHT))
 pg.display.set_caption('Tower Defense')
 
 def game_loop():
+    '''main game loop'''
     clock = pg.time.Clock()
     
     # Create GameManager - centralized game state
@@ -21,17 +22,17 @@ def game_loop():
     ui = pg.sprite.Group(interface)
     
     # Spawn first wave
-    game._spawn_next_wave()
+    game.start_game()
     
     while game.running:
         # Event handling
         for event in pg.event.get():
-            if event.type == pg.QUIT:
+            if event.type == pg.constants.QUIT:
                 game.running = False
-            elif event.type == pg.KEYDOWN:
-                if event.key == pg.K_SPACE:
+            elif event.type == pg.constants.KEYDOWN:
+                if event.key == pg.constants.K_SPACE:
                     game.toggle_pause()
-                elif event.key == pg.K_r and game.game_over:
+                elif event.key == pg.constants.K_r and game.game_over:
                     game.reset_game()
                     interface = gui.Interface(game)
                     ui = pg.sprite.Group(interface)
