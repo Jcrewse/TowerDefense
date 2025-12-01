@@ -132,7 +132,7 @@ class Enemy(pygame.sprite.Sprite):
     Class defining enemies using pygame sprite system
     '''
 
-    def __init__(self, x, y, health=10, damage=5, speed=1):
+    def __init__(self, x, y, health=10, damage=5, speed=1, bounty=1):
         super().__init__()
         self.state = 'alive'
         self.health = health
@@ -142,6 +142,7 @@ class Enemy(pygame.sprite.Sprite):
         self.x = x
         self.y = y
         self.speed = speed
+        self.bounty = bounty
         
         self.base_image = pygame.Surface((20, 20), pygame.SRCALPHA)
         # pygame.draw.polygon(
@@ -181,12 +182,21 @@ class Enemy(pygame.sprite.Sprite):
         self.image = pygame.transform.rotate(self.base_image, math.degrees(math.atan2(-direction[1], direction[0])))
 
         # Check if against the tower
-        if self._touching_tower():
+        if self.touching_tower():
             return
         else:
             self.x += direction[0]*self.speed
             self.y += direction[1]*self.speed
             self.rect.center = (self.x, self.y)
+            
+    def touching_tower(self):
+        '''
+        Returns True if within the distance of the tower size
+        '''
+        dx = consts.TOWER_X - self.x
+        dy = consts.TOWER_Y - self.y
+        dist = (dx**2 + dy**2)**0.5
+        return dist <= consts.TOWER_SIZE
         
     def _animate_death(self):
         '''Animates enemy death'''
@@ -220,15 +230,7 @@ class Enemy(pygame.sprite.Sprite):
         dy = consts.TOWER_Y - self.y
         dist = (dx**2 + dy**2)**0.5
         return dx/dist, dy/dist, dist
-
-    def _touching_tower(self):
-        '''
-        Returns True if within the distance of the tower size
-        '''
-        dx = consts.TOWER_X - self.x
-        dy = consts.TOWER_Y - self.y
-        dist = (dx**2 + dy**2)**0.5
-        return dist <= consts.TOWER_SIZE
+    
   
 ###############################################################################
     
