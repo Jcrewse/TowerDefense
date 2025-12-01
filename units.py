@@ -190,14 +190,24 @@ class Enemy(pygame.sprite.Sprite):
         
     def _animate_death(self):
         '''Animates enemy death'''
-        # advance timer
+        # Advance timer
         self.death_timer += 1
 
-        # simple fade-out
+        # Calculate fade-out alpha
         alpha = max(0, 255 * (1 - self.death_timer / self.death_duration))
-        surf = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
-        surf.fill((255, 0, 0, int(alpha)))
-        self.image = surf
+        
+        # Start with the base image
+        temp_image = self.base_image.copy()
+        
+        # Apply alpha/transparency to it
+        temp_image.set_alpha(int(alpha))
+        
+        # Now rotate it to face the tower
+        angle = math.degrees(math.atan2(-(consts.TOWER_Y - self.y), (consts.TOWER_X - self.x)))
+        self.image = pygame.transform.rotate(temp_image, angle)
+        
+        # Update rect to keep it centered (rotation changes size)
+        self.rect = self.image.get_rect(center=(self.x, self.y))
 
         if self.death_timer >= self.death_duration:
             self.state = "dead"
