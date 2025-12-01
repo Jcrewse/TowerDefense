@@ -55,7 +55,7 @@ def game_loop():
         if game.paused:
             _draw_pause_overlay(screen)
         elif game.game_over:
-            _draw_game_over_overlay(screen, game.wave_number, game.score)
+            _draw_game_over_overlay(screen, game.wave_number)
 
         pg.display.flip()
         clock.tick(consts.FPS)
@@ -73,14 +73,13 @@ def _draw_pause_overlay(screen):
     screen.blit(overlay, (0, 0))
     screen.blit(text, text_rect)
 
-def _draw_game_over_overlay(screen, wave_number, score):
+def _draw_game_over_overlay(screen, wave_number):
     """Draw game over overlay"""
     font_large = pg.font.Font(None, 72)
     font_small = pg.font.Font(None, 36)
     
     game_over_text = font_large.render("GAME OVER", True, (255, 0, 0))
     wave_text = font_small.render(f"Reached Wave: {wave_number}", True, (255, 255, 255))
-    score_text = font_small.render(f"Score: {score}", True, (255, 255, 255))
     restart_text = font_small.render("Press R to Restart", True, (255, 255, 255))
     
     # Semi-transparent overlay
@@ -94,8 +93,6 @@ def _draw_game_over_overlay(screen, wave_number, score):
                 game_over_text.get_rect(center=(consts.SCREEN_WIDTH/2, consts.SCREEN_HEIGHT/2 - 60)))
     screen.blit(wave_text, 
                 wave_text.get_rect(center=(consts.SCREEN_WIDTH/2, consts.SCREEN_HEIGHT/2 + 20)))
-    screen.blit(score_text, 
-                score_text.get_rect(center=(consts.SCREEN_WIDTH/2, consts.SCREEN_HEIGHT/2 + 60)))
     screen.blit(restart_text, 
                 restart_text.get_rect(center=(consts.SCREEN_WIDTH/2, consts.SCREEN_HEIGHT/2 + 120)))
 

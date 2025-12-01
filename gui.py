@@ -52,12 +52,10 @@ class Interface(pygame.sprite.Sprite):
                                        True, consts.WHITE)
         cash_text = self.font.render(f'${self.game_manager.cash}', True, consts.WHITE)
         wave_text = self.font.render(f'Wave: {self.game_manager.wave_number}', True, consts.WHITE)
-        score_text = self.font.render(f'Score: {self.game_manager.score}', True, consts.WHITE)
         
         self.image.blit(health_text, (consts.SCREEN_WIDTH/2 - 25, 52))
         self.image.blit(cash_text, (consts.SCREEN_WIDTH/2 + 40, 10))
         self.image.blit(wave_text, (consts.SCREEN_WIDTH/2 - 100, 10))
-        self.image.blit(score_text, (10, consts.SCREEN_HEIGHT - 30))
     
     def _draw_upgrade_costs(self):
         """Draw upgrade costs below buttons"""
