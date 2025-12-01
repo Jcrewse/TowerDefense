@@ -98,11 +98,14 @@ def _draw_game_over_overlay(screen, wave_number):
 
     # Position text
     screen.blit(game_over_text,
-                game_over_text.get_rect(center=(consts.SCREEN_WIDTH / 2, consts.SCREEN_HEIGHT / 2 - 60)))
+                game_over_text.get_rect(center=(consts.SCREEN_WIDTH / 2,
+                                                consts.SCREEN_HEIGHT / 2 - 60)))
     screen.blit(wave_text,
-                wave_text.get_rect(center=(consts.SCREEN_WIDTH / 2, consts.SCREEN_HEIGHT / 2 + 20)))
+                wave_text.get_rect(center=(consts.SCREEN_WIDTH / 2,
+                                           consts.SCREEN_HEIGHT / 2 + 20)))
     screen.blit(restart_text,
-                restart_text.get_rect(center=(consts.SCREEN_WIDTH / 2, consts.SCREEN_HEIGHT / 2 + 120)))
+                restart_text.get_rect(center=(consts.SCREEN_WIDTH / 2,
+                                              consts.SCREEN_HEIGHT / 2 + 120)))
 
 
 if __name__ == "__main__":
