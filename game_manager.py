@@ -141,7 +141,8 @@ class GameManager:
     def _handle_enemy_death(self, enemy):
         """Handle enemy death - award cash and score"""
         # Award cash for kill (before they're removed)
-        if hasattr(enemy, 'health') and enemy.health <= 0:
+        if enemy.health <= 0:
+            print(f"Enemy killed! Awarded ${enemy.bounty}")
             self.cash += enemy.bounty
 
     def _check_game_state(self):

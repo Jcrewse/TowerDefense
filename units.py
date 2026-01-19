@@ -8,7 +8,7 @@ class Tower:
     '''Class defining the tower'''
 
     def __init__(self, screen, health=100, regen=0.5,
-                 damage=15, range=150, cooldown=25, cash=0):
+                 damage=15, range=300, cooldown=25, cash=0):
 
         self.screen = screen                              # Game screen
 

@@ -10,7 +10,6 @@ pg.font.init()
 screen = pg.display.set_mode((consts.SCREEN_WIDTH, consts.SCREEN_HEIGHT))
 pg.display.set_caption('Tower Defense')
 
-
 def game_loop():
     '''main game loop'''
     clock = pg.time.Clock()
@@ -48,7 +47,7 @@ def game_loop():
         ui.update()
 
         # Rendering
-        screen.fill((0, 0, 0))
+        screen.fill(consts.BACKGROUND_COLOR)
         game.draw()
         ui.draw(screen)
 
