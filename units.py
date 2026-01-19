@@ -1,5 +1,6 @@
 '''Units for TowerDefense'''
 import pygame
+import pygame.gfxdraw as gfxdraw
 import consts
 import math
 
@@ -7,8 +8,8 @@ import math
 class Tower:
     '''Class defining the tower'''
 
-    def __init__(self, screen, health=100, regen=0.5,
-                 damage=15, range=300, cooldown=25, cash=0):
+    def __init__(self, screen, health=100, regen=0.1,
+                 damage=1, range=200, cooldown=30, cash=0):
 
         self.screen = screen                              # Game screen
 
@@ -124,10 +125,21 @@ class Tower:
             self.max_health += 20
             self.health += 20  # also heal current health
 
+###############################################################################
+# RENDER FUNCTIONS
+###############################################################################
+
     def draw(self, screen):
+        '''Draw tower elements to screen surface'''
         pygame.draw.circle(screen, (0, 255, 0), self.pos, 20)
-        # optional: draw range
-        pygame.draw.circle(screen, (0, 100, 0), self.pos, self.range, 1)
+        #pygame.draw.circle(screen, (0, 100, 0), self.pos, self.range, 1)
+        self._draw_range_circle(screen)
+        
+    def _draw_range_circle(self, screen):
+        '''Draw the tower's range circle'''
+        for angle in range(0, 360, 5):
+            gfxdraw.arc(screen, int(self.pos[0]), int(self.pos[1]), self.range, angle, angle + 2, (0, 255, 0))
+
 
 ###############################################################################
 
@@ -137,7 +149,7 @@ class Enemy(pygame.sprite.Sprite):
     Class defining enemies using pygame sprite system
     '''
 
-    def __init__(self, x, y, health=10, damage=5, speed=1, bounty=1):
+    def __init__(self, x, y, health=1, damage=1, speed=1, bounty=1):
         super().__init__()
         self.state = 'alive'
         self.health = health

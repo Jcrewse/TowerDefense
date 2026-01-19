@@ -44,6 +44,8 @@ class Interface(pygame.sprite.Sprite):
         self.image.blit(self.dmg_button.image, self.dmg_button.rect)
         self.image.blit(self.spd_button.image, self.spd_button.rect)
         self.image.blit(self.arm_button.image, self.arm_button.rect)
+        
+        self.image.blit(self.tower_stats_interface.image, self.tower_stats_interface.rect)
 
     def _draw_healthbar(self):
         buff = 2
@@ -90,6 +92,9 @@ class Interface(pygame.sprite.Sprite):
     
 class TowerStatsInterface(pygame.sprite.Sprite):
     '''Class defining the tower stats interface'''
+    
+    BOX_WIDTH = 200
+    BOX_HEIGHT = 50
 
     def __init__(self, tower):
         super().__init__()
@@ -97,12 +102,12 @@ class TowerStatsInterface(pygame.sprite.Sprite):
         self.tower = tower
 
         self.image = pygame.Surface(
-            (consts.SCREEN_WIDTH/4, consts.SCREEN_HEIGHT/4), pygame.SRCALPHA)
-        self.rect = self.image.get_rect(topleft=(0, 0))
+            (self.BOX_WIDTH, self.BOX_HEIGHT), pygame.SRCALPHA)
+        self.rect = self.image.get_rect(topleft=(consts.SCREEN_WIDTH/2 - self.BOX_WIDTH/2, 5))
 
     def update(self):
         '''Update tower stats interface elements'''
-        self.image.fill((0, 0, 100, 0))
+        self.image.fill((0, 0, 0))
         pygame.draw.rect(self.image, consts.BLACK, self.image.get_rect(), 2)
 
         # Draw tower stats
